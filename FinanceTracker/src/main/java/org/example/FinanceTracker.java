@@ -24,7 +24,7 @@ public class FinanceTracker {
             switch (choice) {
                 case 1 -> addEntryInteractive();
                 case 2 -> loadFromCustomFile();
-                case 3 -> manager.printMonthlySummary();
+                case 3 -> manager.printDateWiseMonthlySummary();
                 case 4 -> manager.clearDataFileButKeepHeader(); // Extra OPTION
                 case 5 -> {
                     System.out.println("Exiting...");

@@ -5,13 +5,12 @@ import org.example.domain.entity.Entry;
 
 import java.io.*;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.example.domain.constants.constants.PATH;
+import static org.example.utility.StringFormatters.capitalize;
 
 public class EntryManager {
     List<Entry> entries = new ArrayList<>();
@@ -61,33 +60,51 @@ public class EntryManager {
         }
     }
 
-    public void printMonthlySummary() {
-        double totalIncome = 0, totalExpense = 0;
-        Map<String, Double> incomeMap = new HashMap<>();
-        Map<String, Double> expenseMap = new HashMap<>();
+    public void printDateWiseMonthlySummary() {
         if (entries.isEmpty()) {
-            System.out.println("No data found.......");
+            System.out.println("No data available.");
             return;
         }
-        for (Entry e : entries) {
-            if (e.type.equalsIgnoreCase("income")) {
-                totalIncome += e.amount;
-                incomeMap.put(e.subCategory, incomeMap.getOrDefault(e.subCategory, 0.0) + e.amount);
-            } else if (e.type.equalsIgnoreCase("expense")) {
-                totalExpense += e.amount;
-                expenseMap.put(e.subCategory, expenseMap.getOrDefault(e.subCategory, 0.0) + e.amount);
-            }
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
+
+        Map<YearMonth, Map<LocalDate, List<Entry>>> grouped = new TreeMap<>();
+
+        for (Entry entry : entries) {
+            YearMonth ym = YearMonth.from(entry.getDate());
+            grouped
+                    .computeIfAbsent(ym, k -> new TreeMap<>())
+                    .computeIfAbsent(entry.getDate(), k -> new ArrayList<>())
+                    .add(entry);
         }
 
-        System.out.println("\n--- Monthly Summary ---");
-        System.out.println("Total Income: ₹" + totalIncome);
-        incomeMap.forEach((k, v) -> System.out.println("  " + k + ": ₹ " + v));
+        for (Map.Entry<YearMonth, Map<LocalDate, List<Entry>>> monthEntry : grouped.entrySet()) {
+            System.out.println("\n📅 Summary for " + monthEntry.getKey().format(monthFormatter));
+            double monthlyIncome = 0;
+            double monthlyExpense = 0;
 
-        System.out.println("Total Expense: ₹" + totalExpense);
-        expenseMap.forEach((k, v) -> System.out.println("  " + k + ": ₹ " + v));
+            for (Map.Entry<LocalDate, List<Entry>> dateEntry : monthEntry.getValue().entrySet()) {
+                System.out.println("\n" + dateEntry.getKey().format(dateFormatter) + ":");
 
-        System.out.println("Net Savings: ₹" + (totalIncome - totalExpense));
+                for (Entry e : dateEntry.getValue()) {
+                    System.out.printf("  %-7s - %-12s: ₹%.2f%n",
+                            capitalize(e.getType()), e.getSubCategory(), e.getAmount());
+
+                    if (e.getType().equalsIgnoreCase("income")) {
+                        monthlyIncome += e.getAmount();
+                    } else {
+                        monthlyExpense += e.getAmount();
+                    }
+                }
+            }
+
+            System.out.printf("\nTotal Income  : ₹%.2f%n", monthlyIncome);
+            System.out.printf("Total Expense : ₹%.2f%n", monthlyExpense);
+            System.out.printf("Balance       : ₹%.2f%n", (monthlyIncome - monthlyExpense));
+        }
     }
+
 
     public void clearDataFileButKeepHeader() {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(PATH))) {
