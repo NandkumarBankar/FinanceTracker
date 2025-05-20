@@ -65,7 +65,10 @@ public class EntryManager {
         double totalIncome = 0, totalExpense = 0;
         Map<String, Double> incomeMap = new HashMap<>();
         Map<String, Double> expenseMap = new HashMap<>();
-
+        if (entries.isEmpty()) {
+            System.out.println("No data found.......");
+            return;
+        }
         for (Entry e : entries) {
             if (e.type.equalsIgnoreCase("income")) {
                 totalIncome += e.amount;
@@ -90,6 +93,7 @@ public class EntryManager {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(PATH))) {
             bw.write("type,subcategory,amount,date"); // write header only
             bw.newLine();
+            entries.clear();
             System.out.println("File cleared successfully (header retained).");
         } catch (IOException e) {
             System.out.println("Error clearing file: " + e.getMessage());
